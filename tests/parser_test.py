@@ -133,3 +133,16 @@ def test_parser_if_with_expressions() -> None:
             right=Literal(3)
         )
     )
+
+def test_parser_if_is_a_part_of_expression() -> None:
+    assert parse(tokenize('1 + if 1 then 2 else 3')) == BinaryOp(
+        left=Literal(1),
+        op='+',
+        right=IfExpression(
+            cond=Literal(1),
+            then_clause=Literal(2),
+            else_clause=Literal(3)
+        )
+    )
+
+# TODO: test nested if
