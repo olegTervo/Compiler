@@ -28,15 +28,15 @@ def test_tokenizer_operator() -> None:
         Token(type="int_literal", text="5")
     ]
 
-def test_tokenizer_parenthesis() -> None:
+def test_tokenizer_punctuation() -> None:
     assert tokenize("(2+2)*2") == [
-        Token(type="parenthesis", text="("),
+        Token(type="punctuation", text="("),
         Token(type="int_literal", text="2"),
         Token(type="operator", text="+"),
         Token(type="int_literal", text="2"),
-        Token(type="parenthesis", text=")"),
+        Token(type="punctuation", text=")"),
         Token(type="operator", text="*"),
-        Token(type="int_literal", text="2"),
+        Token(type="int_literal", text="2")
     ]
 
 def test_tokenizer_negative_or_substitution() -> None:
@@ -47,9 +47,30 @@ def test_tokenizer_negative_or_substitution() -> None:
     ]
 
 def test_tokenizer_variable_initialization() -> None:
-    assert tokenize("int n = 4") == [
+    assert tokenize("int n = 4;") == [
         Token(type="identifier", text="int"),
         Token(type="identifier", text="n"),
         Token(type="operator", text="="),
-        Token(type="int_literal", text="4")
+        Token(type="int_literal", text="4"),
+        Token(type="punctuation", text=";")
+    ]
+
+def test_tokenizer_course_example() -> None:
+    assert tokenize("if a <= bee then print_int(123)") == [
+        Token(type="identifier", text="if"),
+        Token(type="identifier", text="a"),
+        Token(type="operator", text="<="),
+        Token(type="identifier", text="bee"),
+        Token(type="identifier", text="then"),
+        Token(type="identifier", text="print_int"),
+        Token(type="punctuation", text="("),
+        Token(type="int_literal", text="123"),
+        Token(type="punctuation", text=")")
+    ]
+
+def test_tokenizer_skips_comment() -> None:
+    assert tokenize("// this is comment \n int a;") == [
+        Token(type="identifier", text="int"),
+        Token(type="identifier", text="a"),
+        Token(type="punctuation", text=";")
     ]
