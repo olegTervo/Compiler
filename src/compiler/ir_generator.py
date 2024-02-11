@@ -45,7 +45,7 @@ class CondJump(Instruction):
 def generate_ir(root_node: Expression) -> list[Instruction]:
     next_var_number = 1
     next_label_number = 1
-    instructions = []
+    instructions: list[Instruction] = []
 
     def new_var() -> IRVar:
         nonlocal next_var_number
@@ -62,9 +62,13 @@ def generate_ir(root_node: Expression) -> list[Instruction]:
     def visit(node: Expression) -> IRVar:
         match node:
             case Literal():
-                var = new_var()
-                instructions.append(LoadIntConst(node.value, var))
-                return var
+                if isinstance(node.value, int):
+                    var = new_var()
+                    val = int(node.value)
+                    instructions.append(LoadIntConst(val, var))
+                    return var
+                else:
+                    raise Exception("TODO: handle")
             
             case BinaryOp():
                 var_left = visit(node.left)
