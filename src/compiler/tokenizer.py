@@ -8,7 +8,7 @@ TokenType = Literal["int_literal", "identifier", "operator", "punctuation", "end
 Regexes: list[Tuple[TokenType, re.Pattern[str]]] = [
     ("int_literal", re.compile(r'[0-9]+')),
     ("identifier", re.compile(r'[a-zA-z_][a-zA-z0-9_]*')),
-    ("operator", re.compile(r'==|<=|>=|!=|[+\-*\/=><]')),
+    ("operator", re.compile(r'==|<=|>=|!=|[+\-*\/=><%]')),
     ("punctuation", re.compile(r'[(){},;]'))
 ]
 
