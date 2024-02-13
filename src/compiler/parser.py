@@ -27,6 +27,14 @@ class BinaryOp(Expression):
         return isinstance(self.right, Block)
 
 @dataclass
+class UnaryOp(Expression):
+    op: str
+    right: Expression
+
+    def ends_with_block(self) -> bool:
+        return isinstance(self.right, Block)
+
+@dataclass
 class IfExpression(Expression):
     cond: Expression
     then_clause: Expression
@@ -54,14 +62,6 @@ class WhileExpression(Expression):
 
     def ends_with_block(self) -> bool:
         return isinstance(self.body, Block)
-
-@dataclass
-class UnaryExpression(Expression):
-    op: str
-    right: Expression
-
-    def ends_with_block(self) -> bool:
-        return isinstance(self.right, Block)
     
 @dataclass
 class VariableDeclaration(Expression):
@@ -120,7 +120,11 @@ def parse(tokens: list[Token]) -> Expression:
                     result = block
                     break
             else:
-                exp = parse_expression()
+                if peek().text == 'var':
+                    exp = parse_variable_declaration()
+                else:
+                    exp = parse_expression()
+                    
                 if peek().type != 'end' and peek().text != '}':
                     if not exp.ends_with_block() or peek().text == ';':
                         consume(';')
@@ -190,8 +194,6 @@ def parse(tokens: list[Token]) -> Expression:
             return parse_while_expression()
         elif peek().text in ['not', '-']:
             return parse_unary_expression()
-        elif peek().text == 'var':
-            return parse_variable_declaration()
         elif peek().type == 'int_literal':
             return parse_literal()
         elif peek().type == 'identifier':
@@ -231,7 +233,7 @@ def parse(tokens: list[Token]) -> Expression:
             right = parse_unary_expression()
         else:
             right = parse_expression()
-        return UnaryExpression(op, right)
+        return UnaryOp(op, right)
     
     def parse_variable_declaration() -> Expression:
         consume('var')

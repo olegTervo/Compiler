@@ -1,5 +1,5 @@
 
-from compiler.parser import BinaryOp, Block, Function, Identifier, IfExpression, Literal, UnaryExpression, VariableDeclaration, WhileExpression, parse
+from compiler.parser import BinaryOp, Block, Function, Identifier, IfExpression, Literal, UnaryOp, VariableDeclaration, WhileExpression, parse
 from compiler.tokenizer import tokenize
 
 def test_parser_can_parse() -> None:
@@ -398,26 +398,26 @@ def test_parser_parse_while_with_blocks_then_expression() -> None:
     ])
 
 def test_parser_parse_unary_operation() -> None:
-    assert parse(tokenize('-a')) == UnaryExpression(
+    assert parse(tokenize('-a')) == UnaryOp(
         op='-',
         right=Identifier('a')
     )
 
 def test_parser_parse_unary_operation_not() -> None:
-    assert parse(tokenize('not a')) == UnaryExpression(
+    assert parse(tokenize('not a')) == UnaryOp(
         op='not',
         right=Identifier('a')
     )
 
 def test_parser_parse_unary_operation_not_block() -> None:
-    assert parse(tokenize('not { a }')) == UnaryExpression(
+    assert parse(tokenize('not { a }')) == UnaryOp(
         op='not',
         right=Block([Identifier('a')])
     )
 
 def test_parser_parse_unary_operation_then_literal_no_semicolon() -> None:
     assert parse(tokenize('not { a } b')) == Block([
-        UnaryExpression(
+        UnaryOp(
             op='not',
             right=Block([Identifier('a')])
         ),
@@ -426,7 +426,7 @@ def test_parser_parse_unary_operation_then_literal_no_semicolon() -> None:
 
 def test_parser_parse_unary_operation_then_literal_after_semicolon() -> None:
     assert parse(tokenize('not { a }; b')) == Block([
-        UnaryExpression(
+        UnaryOp(
             op='not',
             right=Block([Identifier('a')])
         ),
@@ -438,6 +438,13 @@ def test_parser_parse_variable_declaration() -> None:
         name='a',
         initializer=Identifier('b')
     )
+
+def test_parser_parse_variable_declaration_fails() -> None:
+    assert_parser_fails('if var a = b then c')
+    assert_parser_fails('while var a = b do c')
+    assert_parser_fails('if a then var a = b')
+    assert_parser_fails('a = var b = c')
+    assert_parser_fails('var a = var b')
 
 def test_parser_parse_assignment() -> None:
     assert parse(tokenize('a = b + 1')) == BinaryOp(
@@ -467,8 +474,6 @@ def test_parser_empty_input() -> None:
 
 def test_parser_fails() -> None:
     assert_parser_fails('1 + 3 4')
-
-# TODO: more to fail
 
 def assert_parser_fails(code: str) -> None:
     token = tokenize(code)
