@@ -224,7 +224,14 @@ def parse(tokens: list[Token]) -> Expression:
         cond = parse_expression()
         consume('do')
         body = parse_expression()
-        return WhileExpression(cond, body)
+        if isinstance(body, Block):
+            return WhileExpression(cond, body)
+        else:
+            if peek().text == ';':
+                consume(';')
+                empty = Literal(None)
+                return WhileExpression(cond, Block([body, empty]))
+            return WhileExpression(cond, body)
     
     def parse_unary_expression() -> Expression:
         op = peek().text

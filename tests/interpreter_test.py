@@ -31,6 +31,18 @@ def test_interpreter_handles_if_then() -> None:
 def test_interpreter_handles_if_else() -> None:
     assert interpret(parse(tokenize('if 1 > 2 then 3 else 4'))) == 4
 
+def test_interpreter_handles_while() -> None:
+    assert interpret(parse(tokenize('var a = 1; while a < 3 do a = 3;'))) == None
+
+def test_interpreter_handles_while_with_return() -> None:
+    assert interpret(parse(tokenize('var a = 1; while a < 3 do { a = a + 1; a }'))) == None
+    
+def test_interpreter_handles_while_with_blocks() -> None:
+    assert interpret(parse(tokenize('var a = 1; while { a < 3 } do { a = a + 1; }'))) == None
+    
+def test_interpreter_handles_while_then_expression() -> None:
+    assert interpret(parse(tokenize('var a = 1; while a < 3 do a = a + 1; a'))) == 3
+
 def test_interpreter_handles_if_in_expression() -> None:
     assert interpret(parse(tokenize('7 + if 1 < 2 then 3 else 4'))) == 10
 

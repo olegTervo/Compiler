@@ -376,13 +376,19 @@ def test_parser_parse_expression_in_block_without_semicolon() -> None:
         Literal(3)
     ])
 
-def test_parser_parse_while() -> None:
+def test_parser_parse_while_with_return() -> None:
     assert parse(tokenize('while a do b')) == WhileExpression(
         cond=Identifier('a'),
         body=Identifier('b')
     )
+
+def test_parser_parse_while_with_expression() -> None:
+    assert parse(tokenize('while a do b;')) == WhileExpression(
+        cond=Identifier('a'),
+        body=Block([Identifier('b'), Literal(None)])
+    )
     
-def test_parser_parse_while_with_blocks() -> None:
+def test_parser_parse_while_with_blocks_incorrect_do_returns() -> None:
     assert parse(tokenize('while { a } do { b }')) == WhileExpression(
         cond=Block([Identifier('a')]),
         body=Block([Identifier('b')])
