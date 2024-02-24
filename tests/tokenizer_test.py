@@ -1,6 +1,6 @@
 
-
-from compiler.tokenizer import Token, tokenize
+from compiler.models.tokens import Token
+from compiler.tokenizer import tokenize
 
 
 def test_tokenizer_works() -> None:

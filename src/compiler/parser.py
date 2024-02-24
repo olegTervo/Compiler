@@ -1,72 +1,6 @@
-from dataclasses import dataclass
-from compiler.tokenizer import Token
-
-
-@dataclass
-class Expression:
-    "base class"
-
-    def ends_with_block(self) -> bool:
-        return False
-
-@dataclass
-class Identifier(Expression):
-    name: str
-
-@dataclass
-class Literal(Expression):
-    value: int | bool | None
-
-@dataclass
-class BinaryOp(Expression):
-    left: Expression
-    op: str
-    right: Expression
-
-    def ends_with_block(self) -> bool:
-        return isinstance(self.right, Block)
-
-@dataclass
-class UnaryOp(Expression):
-    op: str
-    right: Expression
-
-    def ends_with_block(self) -> bool:
-        return isinstance(self.right, Block)
-
-@dataclass
-class IfExpression(Expression):
-    cond: Expression
-    then_clause: Expression
-    else_clause: Expression | None
-
-    def ends_with_block(self) -> bool:
-        return (isinstance(self.then_clause, Block) and self.else_clause is None) or isinstance(self.else_clause, Block)
-
-@dataclass
-class Function(Expression):
-    name: str
-    args: list[Expression]
-
-@dataclass
-class Block(Expression):
-    sequence: list[Expression]
-
-    def ends_with_block(self) -> bool:
-        return True
-    
-@dataclass
-class WhileExpression(Expression):
-    cond: Expression
-    body: Expression
-
-    def ends_with_block(self) -> bool:
-        return isinstance(self.body, Block)
-    
-@dataclass
-class VariableDeclaration(Expression):
-    name: str
-    initializer: Expression
+from compiler.models.expressions import *
+from compiler.models.tokens import Token
+from compiler.models.types import *
 
 def parse(tokens: list[Token]) -> Expression:
     pos = 0
@@ -247,10 +181,15 @@ def parse(tokens: list[Token]) -> Expression:
         if peek().type == 'identifier':
             name = peek().text
             consume(name)
+            variable_type: Type = BasicType('Unit')
+            if peek().text == ':':
+                consume(':')
+                t = consume()
+                variable_type = string_to_type(t.text)
             consume('=')
             initializer = parse_expression()
 
-            return VariableDeclaration(name, initializer)
+            return VariableDeclaration(name, initializer, type=variable_type)
         else:
             raise Exception(f'Expected variable name, but found {peek().text}')
 
@@ -292,4 +231,3 @@ def parse(tokens: list[Token]) -> Expression:
         return args
 
     return parse_code()
-

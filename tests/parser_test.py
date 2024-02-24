@@ -1,6 +1,7 @@
 
 from compiler.parser import BinaryOp, Block, Function, Identifier, IfExpression, Literal, UnaryOp, VariableDeclaration, WhileExpression, parse
 from compiler.tokenizer import tokenize
+from compiler.type_checker import Bool, Int
 
 def test_parser_can_parse() -> None:
     assert parse(tokenize("1")) == Literal(1)
@@ -445,6 +446,20 @@ def test_parser_parse_variable_declaration() -> None:
         initializer=Identifier('b')
     )
 
+def test_parser_parse_variable_declaration_with_type_int() -> None:
+    assert parse(tokenize('var a: Int = 1')) == VariableDeclaration(
+        name='a',
+        initializer=Literal(1),
+        type=Int
+    )
+
+def test_parser_parse_variable_declaration_with_type_bool() -> None:
+    assert parse(tokenize('var a: Bool = true')) == VariableDeclaration(
+        name='a',
+        initializer=Literal(True),
+        type=Bool
+    )
+
 def test_parser_parse_variable_declaration_fails() -> None:
     assert_parser_fails('if var a = b then c')
     assert_parser_fails('while var a = b do c')
@@ -469,7 +484,7 @@ def test_parser_block_test_cases() -> None:
     assert_parser_not_fails('{ if true then { a }; b }')
     assert_parser_not_fails('{ if true then { a } b; c }')
     assert_parser_not_fails('{ if true then { a } else { b } 3 }')
-    # assert_parser_not_fails('x = { { f(a) } { b } }')
+    assert_parser_not_fails('x = { { f(a) } { b } }')
 
 def test_parser_block_test_cases_should_fail() -> None:
     assert_parser_fails('{ a b }')

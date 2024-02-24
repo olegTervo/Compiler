@@ -1,32 +1,16 @@
 
-from dataclasses import dataclass
-from compiler.parser import BinaryOp, Block, Expression, Function, Identifier, IfExpression, Literal, UnaryOp, VariableDeclaration, WhileExpression
-
-@dataclass(frozen=True)
-class Type:
-    "Base class for types"
-
-@dataclass(frozen=True)
-class BasicType(Type):
-    name: str
-
-@dataclass
-class SymTab():
-    variables: dict
-
-@dataclass
-class HierarchicalSymTab(SymTab):
-    parent: SymTab
-
-Int = BasicType('Int')
-Bool = BasicType('Bool')
-Unit = BasicType('Unit')
-FunType = BasicType('Function')
+from compiler.models.expressions import *
+from compiler.models.types import *
+from compiler.models.symbol_table import *
 
 # TODO: own exception types
 # TODO: table to track types of variables
 # TODO: add a Type to each AST node
 def typecheck(node: Expression, variables: SymTab = SymTab({})) -> Type:
+    node.type = check_type(node, variables)
+    return node.type
+
+def check_type(node: Expression, variables: SymTab = SymTab({})) -> Type:
     match node:
         case Literal():
             if isinstance(node.value, bool):
@@ -128,3 +112,4 @@ def typecheck(node: Expression, variables: SymTab = SymTab({})) -> Type:
         
         case _:
             raise Exception(f'Unsupported AST node: {node}')
+        

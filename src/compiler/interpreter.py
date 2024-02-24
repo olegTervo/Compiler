@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from compiler.parser import BinaryOp, Block, Expression, Identifier, IfExpression, Literal, UnaryOp, VariableDeclaration, WhileExpression
+from compiler.models.expressions import *
+from compiler.models.symbol_table import *
 
 Value = Callable | int | bool | None
 PredefinedSymbols = {
@@ -21,14 +22,6 @@ PredefinedSymbols = {
 
     'unary_negative': lambda x: not x if isinstance(x, bool) else -x,
 }
-
-@dataclass
-class SymTab():
-    variables: dict
-
-@dataclass
-class HierarchicalSymTab(SymTab):
-    parent: SymTab
 
 # TODO: add variables, loops, tables, etc...
 def interpret(node: Expression, variables: SymTab = SymTab(variables=PredefinedSymbols)) -> Value:
