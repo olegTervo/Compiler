@@ -1,4 +1,5 @@
 
+from compiler.models.types import Unit
 from compiler.parser import BinaryOp, Block, Function, Identifier, IfExpression, Literal, UnaryOp, VariableDeclaration, WhileExpression, parse
 from compiler.tokenizer import tokenize
 from compiler.type_checker import Bool, Int
@@ -459,6 +460,28 @@ def test_parser_parse_variable_declaration_with_type_bool() -> None:
         initializer=Literal(True),
         type=Bool
     )
+
+def test_parser_parse_print_int() -> None:
+    assert parse(tokenize('print_int(1)')) == Function(
+        name='print_int',
+        args=[Literal(1)],
+        type=Unit
+    )
+
+def test_parser_parse_print_bool() -> None:
+    assert parse(tokenize('print_bool(true)')) == Function(
+        name='print_bool',
+        args=[Literal(True)],
+        type=Unit
+    )
+
+def test_parser_parse_read_int() -> None:
+    assert parse(tokenize('read_int()')) == Function(
+        name='read_int',
+        args=[],
+        type=Unit
+    )
+
 
 def test_parser_parse_variable_declaration_fails() -> None:
     assert_parser_fails('if var a = b then c')

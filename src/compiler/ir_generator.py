@@ -180,7 +180,7 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                     var_cond = visit(node.cond, variables)
                     instructions.append(CondJump(var_cond, l_then, l_else))
 
-                    var_result = new_var(None)
+                    var_result = new_var(BasicType('Unit'))
 
                     instructions.append(l_then)
                     var_result_then = visit(node.then_clause, variables)
@@ -224,6 +224,33 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                 instructions.append(l_end)
                 return var_result_body
             
+            case Function():
+                match node.name:
+                    case 'print_int':
+                        var_result = new_var(BasicType('Unit'))
+                        var_print = visit(node.args[0], variables)
+                        instructions.append(Call(
+                            fun=IRVar(node.name),
+                            args=[var_print],
+                            dest=var_result
+                        ))
+                    case 'print_bool':
+                        var_result = new_var(BasicType('Unit'))
+                        var_print = visit(node.args[0], variables)
+                        instructions.append(Call(
+                            fun=IRVar(node.name),
+                            args=[var_print],
+                            dest=var_result
+                        ))
+                    case 'read_int':
+                        var_result = new_var(BasicType('Unit'))
+                        instructions.append(Call(
+                            fun=IRVar(node.name),
+                            args=[],
+                            dest=var_result
+                        ))
+                    case _:
+                        raise Exception(f'Unsupported function {node.name}')
             case _:
                 raise Exception(f'Unsupported AST node: {node}')
             

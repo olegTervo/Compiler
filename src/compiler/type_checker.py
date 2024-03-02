@@ -103,7 +103,27 @@ def check_type(node: Expression, variables: SymTab = SymTab({})) -> Type:
             return Unit
         
         case Function():
-            raise Exception("Not implemented")
+            match node.name:
+                case 'print_int':
+                    if len(node.args) == 1:
+                        t1 = typecheck(node.args[0], variables)
+                        if t1 is not Int:
+                            raise Exception(f"Function {node.name} argument was {t1}")
+                        return Unit
+                    raise Exception(f'Unsupported arguments for the print_int function, {node.args}')
+                case 'print_bool':
+                    if len(node.args) == 1:
+                        t1 = typecheck(node.args[0], variables)
+                        if t1 is not Bool:
+                            raise Exception(f"Function {node.name} argument was {t1}")
+                        return Unit
+                    raise Exception(f'Unsupported arguments for the print_bool function, {node.args}')
+                case 'read_int':
+                    if len(node.args) != 0:
+                        raise Exception(f'Function {node.name} expects 0 parameters, got {len(node.args)}')
+                    return Int
+                case _:
+                    raise Exception(f'Unsupported function {node.name}')
         
         case Block():
             for i in range(0, len(node.sequence)-1):

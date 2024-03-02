@@ -9,9 +9,11 @@ def generate_assembly(instructions: list[Instruction]) -> str:
 
     locals = Locals(get_all_ir_variables(instructions)) 
 
+    emit('.extern print_int')
+    emit('.extern print_int')
+    emit('.extern read_int')
     emit('.global main')
     emit('.type main, @function')
-    emit('.extern print_int')
     
     emit('.section .text')
     emit('main:')
@@ -58,7 +60,7 @@ def generate_assembly(instructions: list[Instruction]) -> str:
                     intrinsic(args)
                     emit(f'movq %rax, {locals.get_ref(inst.dest)}')
                 else:
-                    assert inst.fun.name == 'print_int' # ,... TODO: others
+                    assert inst.fun.name in ['print_int', 'print_bool', 'read_int']
                     assert len(inst.args) == 1 # TODO: more args
                     emit(f'movq {locals.get_ref(inst.args[0])}, %rdi')
                     emit('call print_int')

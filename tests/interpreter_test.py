@@ -1,3 +1,4 @@
+from pytest import MonkeyPatch
 
 from compiler.interpreter import interpret
 from compiler.parser import parse
@@ -84,6 +85,28 @@ def test_interpreter_handles_or_true() -> None:
 
 def test_interpreter_handles_or_false() -> None:
     assert interpret(parse(tokenize('false or false'))) == False
+
+def test_interpreter_handles_print_int() -> None:
+    assert interpret(parse(tokenize('print_int(1)'))) == None
+
+def test_interpreter_handles_print_bool() -> None:
+    assert interpret(parse(tokenize('print_bool(true)'))) == None
+
+def test_interpreter_handles_read_int(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr('builtins.input', lambda _: "1")
+    assert interpret(parse(tokenize('read_int()'))) == 1
+
+def test_interpreter_fails_bad_parameters_for_predefined_functions() -> None:
+    assert_interpreter_fails('print_int()')
+    assert_interpreter_fails('print_int(a)')
+    assert_interpreter_fails('print_int(1, 2)')
+    assert_interpreter_fails('print_bool()')
+    assert_interpreter_fails('print_bool(b)')
+    assert_interpreter_fails('print_bool(true, false)')
+
+def test_interpreter_fails_bad_input(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr('builtins.input', lambda _: "hi")
+    assert_interpreter_fails('read_int()')
     
 def test_interpreter_handles_or_expression_from_example() -> None:
     assert interpret(parse(tokenize(

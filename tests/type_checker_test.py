@@ -1,4 +1,5 @@
 
+from pytest import MonkeyPatch
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
 from compiler.type_checker import *
@@ -159,6 +160,30 @@ def test_type_checker_block_int_return() -> None:
     assert node.sequence[1].type == Int
     assert node.sequence[2].type == Int
 
+def test_type_checker_print_int() -> None:
+    node = parse(tokenize('print_int(1)'))
+    assert typecheck(node) == Unit
+    assert node.type == Unit
+    assert isinstance(node, Function)
+    assert len(node.args) == 1
+    assert node.args[0].type == Int
+
+def test_type_checker_print_bool() -> None:
+    node = parse(tokenize('print_bool(true)'))
+    assert typecheck(node) == Unit
+    assert node.type == Unit
+    assert isinstance(node, Function)
+    assert len(node.args) == 1
+    assert node.args[0].type == Bool
+
+def test_type_checker_read_int(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr('builtins.input', lambda _: "1")
+    node = parse(tokenize('read_int()'))
+    assert typecheck(node) == Int
+    assert node.type == Int
+    assert isinstance(node, Function)
+    assert len(node.args) == 0
+
 def test_type_check_can_fail() -> None:
     assert_type_checker_fails('(1 < 2) + 3')
 
@@ -182,6 +207,24 @@ def test_type_check_fails_unary_operations() -> None:
 
 def test_type_check_fails_different_if_return_types() -> None:
     assert_type_checker_fails('if 1 < 2 then 3 else 4 < 5')
+
+def test_type_checker_fails_print_int_bad_args() -> None:
+    assert_type_checker_fails('print_int(true)')
+    assert_type_checker_fails('print_int(f())')
+    assert_type_checker_fails('print_int(1, 2)')
+    assert_type_checker_fails('print_int()')
+
+def test_type_checker_fails_print_bool_bad_args() -> None:
+    assert_type_checker_fails('print_bool(1)')
+    assert_type_checker_fails('print_bool(f())')
+    assert_type_checker_fails('print_bool(true, false)')
+    assert_type_checker_fails('print_bool()')
+
+def test_type_checker_fails_read_int_bad_args() -> None:
+    assert_type_checker_fails('read_int(1)')
+    assert_type_checker_fails('read_int(f())')
+    assert_type_checker_fails('read_int(true, false)')
+    assert_type_checker_fails('read_int(a)')
 
 def assert_type_checker_fails(code: str) -> None:
     expr = parse(tokenize(code))

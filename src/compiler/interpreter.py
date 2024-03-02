@@ -96,16 +96,27 @@ def interpret(node: Expression, variables: SymTab = SymTab(variables=PredefinedS
             return interpret(node.sequence[len(node.sequence)-1], childVariables)
         
         case WhileExpression():
-            condition = node.cond
-            if isinstance(condition, Literal) and condition.value == True:
-                raise Exception('Infinite loop detected')
-            i = 0
             while interpret(node.cond, variables) == True:
-                if i > 100: # TODO: remove and roll forever
-                    raise Exception('STOP WHILE')
                 interpret(node.body, variables)
             return None
-            
+        
+        case Function():
+            match node.name:
+                case 'print_int':
+                    if len(node.args) == 1 and isinstance(node.args[0], Literal):
+                        print(node.args[0].value)
+                        return None
+                    raise Exception(f'Unsupported arguments for the print_int function, {node.args}')
+                case 'print_bool':
+                    if len(node.args) == 1 and isinstance(node.args[0], Literal):
+                        print(node.args[0].value)
+                        return None
+                    raise Exception(f'Unsupported arguments for the print_bool function, {node.args}')
+                case 'read_int':
+                    val = int(input(""))
+                    return val
+                case _:
+                    raise Exception(f'Unsupported function {node.name}')
         case _:
             raise Exception(f'Unsupported AST node: {node}')
         
