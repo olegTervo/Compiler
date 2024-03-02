@@ -61,9 +61,12 @@ def generate_assembly(instructions: list[Instruction]) -> str:
                     emit(f'movq %rax, {locals.get_ref(inst.dest)}')
                 else:
                     assert inst.fun.name in ['print_int', 'print_bool', 'read_int']
-                    assert len(inst.args) == 1 # TODO: more args
-                    emit(f'movq {locals.get_ref(inst.args[0])}, %rdi')
-                    emit('call print_int')
+                    if len(inst.args) == 1: # TODO: more args
+                        emit(f'movq {locals.get_ref(inst.args[0])}, %rdi')
+                        emit(f'call {inst.fun.name}')
+                    elif len(inst.args) == 0:
+                        emit(f'call {inst.fun.name}')
+                        emit(f'movq %rax, {locals.get_ref(inst.dest)}')
 
             case Jump():
                 emit(f'jmp .L{inst.label.name}')

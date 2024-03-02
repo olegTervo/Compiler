@@ -234,6 +234,7 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                             args=[var_print],
                             dest=var_result
                         ))
+                        return var_result
                     case 'print_bool':
                         var_result = new_var(BasicType('Unit'))
                         var_print = visit(node.args[0], variables)
@@ -242,6 +243,7 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                             args=[var_print],
                             dest=var_result
                         ))
+                        return var_result
                     case 'read_int':
                         var_result = new_var(BasicType('Unit'))
                         instructions.append(Call(
@@ -249,6 +251,7 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                             args=[],
                             dest=var_result
                         ))
+                        return var_result
                     case _:
                         raise Exception(f'Unsupported function {node.name}')
             case _:
