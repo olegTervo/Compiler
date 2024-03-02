@@ -1,6 +1,6 @@
 
 import dataclasses
-from compiler.ir_generator import Call, CondJump, Copy, IRVar, Instruction, Jump, Label, LoadIntConst
+from compiler.ir_generator import *
 from compiler.intrinsics import IntrinsicArgs, all_intrinsics
 
 def generate_assembly(instructions: list[Instruction]) -> str:
@@ -27,8 +27,23 @@ def generate_assembly(instructions: list[Instruction]) -> str:
 
             case LoadIntConst():
                 # TODO: inst is too large or small, limitations
-                emit(f'movq ${inst.value}, {locals.get_ref(inst.dest)}')
+                if -2**31 <= inst.value < 2**31:
+                    emit(f'movq ${inst.value}, {locals.get_ref(inst.dest)}')
+                else:
+                    # Due to a quirk of x86-64, we must use
+                    # a different instruction for large integers.
+                    # It can only write to a register,
+                    # not a memory location, so we use %rax
+                    # as a temporary.
+                    emit(f'movabsq ${inst.value}, %rax')
+                    emit(f'movq %rax, {locals.get_ref(inst.dest)}')
 
+            case LoadBoolConst():
+                val = 0
+                if inst.value:
+                    val = 1
+                emit(f'movq ${val}, {locals.get_ref(inst.dest)}')
+                    
             case Copy():
                 emit(f'movq {locals.get_ref(inst.source)}, %rax')
                 emit(f'movq %rax, {locals.get_ref(inst.dest)}')
@@ -55,6 +70,9 @@ def generate_assembly(instructions: list[Instruction]) -> str:
                 emit(f'cmpq $0, {locals.get_ref(inst.cond)}')
                 emit(f'jne .L{inst.then_label.name}')
                 emit(f'jmp .L{inst.else_label.name}')
+
+            case Return():
+                break
             
             case _:
                 raise Exception(f'Unknown instruction: {type(inst)}')

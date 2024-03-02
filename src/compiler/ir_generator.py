@@ -146,7 +146,7 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                 if node.type == BasicType('Int'):
                     instructions.append(Call(
                         fun=IRVar('unary_-'),
-                        args=[var_left, var_right],
+                        args=[variable],
                         dest=var_result
                     ))
                 elif node.type == BasicType('Bool'):
