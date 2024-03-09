@@ -1,5 +1,7 @@
 # our compiled program
 compiled_program
+# tests output
+workdir
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

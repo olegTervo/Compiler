@@ -1,0 +1,43 @@
+var a: Int = 1;
+print_int(a);
+output 1
+---
+var a: Int = 1;
+a = a + 1;
+print_int(a);
+output 2
+---
+var a: Int = 1;
+a = a - 2;
+print_int(a);
+output -1
+---
+// -(2^63)+1 is a limit
+var a: Int = -9223372036854775807;
+print_int(a);
+output -9223372036854775807
+---
+// (2^63)-1 is a limit
+var a: Int = 9223372036854775807;
+print_int(a);
+output 9223372036854775807
+---
+var a: Int = 1;
+a = a * 2;
+print_int(a);
+output 2
+---
+var a: Int = 2;
+a = a + 2 * 2;
+print_int(a);
+output 6
+---
+var a: Int = 3;
+a = a / 2;
+print_int(a);
+output 1
+---
+var a: Int = 3;
+a = a % 2;
+print_int(a);
+output 1
