@@ -80,11 +80,17 @@ def test_interpreter_handles_and_true() -> None:
 def test_interpreter_handles_and_false() -> None:
     assert interpret(parse(tokenize('false and true'))) == False
 
+def test_interpreter_handles_and_on_expressions() -> None:
+    assert interpret(parse(tokenize('1 < 2 and 2 < 3'))) == True
+
 def test_interpreter_handles_or_true() -> None:
     assert interpret(parse(tokenize('true or false'))) == True
 
 def test_interpreter_handles_or_false() -> None:
     assert interpret(parse(tokenize('false or false'))) == False
+
+def test_interpreter_handles_not_true() -> None:
+    assert interpret(parse(tokenize('not true'))) == False
 
 def test_interpreter_handles_print_int() -> None:
     assert interpret(parse(tokenize('print_int(1)'))) == None

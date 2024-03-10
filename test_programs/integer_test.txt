@@ -41,3 +41,43 @@ var a: Int = 3;
 a = a % 2;
 print_int(a);
 output 1
+---
+var a: Int = -3;
+a = a * 3;
+print_int(a);
+output -9
+---
+var a: Int = 3;
+a = a * -3;
+print_int(a);
+output -9
+---
+var a: Int = -3;
+a = -a * 3;
+print_int(a);
+output 9
+---
+var a: Int = 3;
+a = --a * 3;
+print_int(a);
+output 9
+---
+var a: Int = -3;
+a = a * ---3;
+print_int(a);
+output 9
+---
+var a: Int = 3;
+a = ----a / ---3;
+print_int(a);
+output -1
+---
+var a: Int = 3;
+a = -(a * 3);
+print_int(a);
+output -9
+---
+var a: Int = 3;
+a = (-1) * (2 + (a * 3));
+print_int(a);
+output -11

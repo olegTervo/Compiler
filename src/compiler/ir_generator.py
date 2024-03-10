@@ -121,17 +121,48 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
             
             case BinaryOp():
                 var_left = visit(node.left, variables)
-                var_right = visit(node.right, variables)
 
                 if isinstance(node.left, Identifier) and node.op == '=':
                     if isinstance(variables.variables, dict) and node.left.name in variables.variables:
+                        var_right = visit(node.right, variables)
                         instructions.append(Copy(var_right, variables.variables[node.left.name]))
                         return variables.variables[node.left.name]
                     elif isinstance(variables, HierarchicalSymTab):
                         return visit(node, variables.parent)
                     else:
                         raise Exception(f'Asserting unknown variable {node.left.name}')
-                
+                elif node.op == 'and':
+                    label_and_right = new_label()
+                    label_and_skip = new_label()
+                    label_and_end = new_label()
+                    instructions.append(CondJump(var_left, label_and_right, label_and_skip))
+                    instructions.append(label_and_right)
+                    var_right = visit(node.right, variables)
+                    var_result = new_var(node.type)
+                    instructions.append(Copy(var_right, var_result))
+                    instructions.append(Jump(label_and_end))
+                    instructions.append(label_and_skip)
+                    instructions.append(LoadBoolConst(False, var_result))
+                    instructions.append(Jump(label_and_end))
+                    instructions.append(label_and_end)
+                    return var_result
+                elif node.op == 'or':
+                    label_or_right = new_label()
+                    label_or_skip = new_label()
+                    label_or_end = new_label()
+                    instructions.append(CondJump(var_left, label_or_skip, label_or_right))
+                    instructions.append(label_or_right)
+                    var_right = visit(node.right, variables)
+                    var_result = new_var(node.type)
+                    instructions.append(Copy(var_right, var_result))
+                    instructions.append(Jump(label_or_end))
+                    instructions.append(label_or_skip)
+                    instructions.append(LoadBoolConst(True, var_result))
+                    instructions.append(Jump(label_or_end))
+                    instructions.append(label_or_end)
+                    return var_result
+
+                var_right = visit(node.right, variables)
                 var_result = new_var(node.type)
                 instructions.append(Call(
                     fun=IRVar(node.op),

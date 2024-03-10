@@ -1,0 +1,66 @@
+true
+output true
+---
+true;
+---
+false;
+---
+print_bool(false)
+output false
+---
+1 > 2
+output false
+---
+1 < 2
+output true
+---
+not true
+---
+print_bool((not true));
+output false
+---
+var a: Bool = not false;
+print_bool(a);
+output true
+---
+print_bool(1 > 2)
+output false
+---
+(1 < 2) and (2 < 3)
+output true
+---
+1 > 2 or 2 < 3
+output true
+---
+1 < 2 and 2 < 3 and true or false
+output true
+---
+var a = 1;
+// not executing right part if left is false
+false and {a = a + 1; true};
+print_int(a);
+output 1
+---
+var a = 1;
+// not executing right part if left is true
+true or {a = a + 1; true};
+print_int(a);
+output 1
+---
+var evaluated_right_hand_side = false;
+true or { evaluated_right_hand_side = true; true };
+evaluated_right_hand_side  // Should be false
+output false
+---
+{
+    var a: Int = 1;
+    a = a + 1;
+    a
+}
+<
+{
+    var a: Int = 1;
+    a = a + 2;
+    a
+}
+output true

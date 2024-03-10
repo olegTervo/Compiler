@@ -43,30 +43,19 @@ def parse(tokens: list[Token]) -> Expression:
         result: Expression = Literal(None)
 
         while peek().type != 'end' and peek().text != '}':
-            if peek().text == '{':
-                block = parse_block()
-                if peek().text == ';':
-                    consume(';')
-                    ret.append(block)
-                elif peek().type != 'end' and peek().text != '}':
-                    ret.append(block)
-                else:
-                    result = block
-                    break
+            if peek().text == 'var':
+                exp = parse_variable_declaration()
             else:
-                if peek().text == 'var':
-                    exp = parse_variable_declaration()
-                else:
-                    exp = parse_expression()
-                    
-                if peek().type != 'end' and peek().text != '}':
-                    if not exp.ends_with_block() or peek().text == ';':
-                        consume(';')
-                    ret.append(exp)
-                else:
-                    result = exp
-                    break
-        
+                exp = parse_expression()
+                
+            if peek().type != 'end' and peek().text != '}':
+                if not exp.ends_with_block() or peek().text == ';':
+                    consume(';')
+                ret.append(exp)
+            else:
+                result = exp
+                break
+    
         # TODO: parse empty block
         # if len(ret) != 0: 
         ret.append(result)
@@ -79,12 +68,15 @@ def parse(tokens: list[Token]) -> Expression:
         consume('}')
         return block
 
-    # TODO: not, -, while, var
     def parse_expression() -> Expression:
+        print('ex', peek().text)
         if peek().text == '{':
+            print('ex block', peek().text)
             left = parse_block()
         else:
+            print('ex pol', peek().text)
             left = parse_polynomial()
+        print('ex after', peek().text)
         
         if peek().text == '=':
             consume('=')
@@ -93,8 +85,12 @@ def parse(tokens: list[Token]) -> Expression:
             return BinaryOp(left, op, right)
         
         while peek().text in ['<', '>', '==', '>=', '<=', '!=', '%']:
+            print('ex cought', peek().text)
             op_token = consume() # TODO: parse_token()
-            right = parse_polynomial()
+            if peek().text == '{':
+                right = parse_block()
+            else:
+                right = parse_polynomial()
             left = BinaryOp(left, op_token.text, right)
         while peek().text in ['or', 'and']:
             op_token = consume(['or', 'and'])

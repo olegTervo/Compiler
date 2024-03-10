@@ -10,7 +10,7 @@ def generate_assembly(instructions: list[Instruction]) -> str:
     locals = Locals(get_all_ir_variables(instructions)) 
 
     emit('.extern print_int')
-    emit('.extern print_int')
+    emit('.extern print_bool')
     emit('.extern read_int')
     emit('.global main')
     emit('.type main, @function')

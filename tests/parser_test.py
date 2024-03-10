@@ -162,6 +162,21 @@ def test_parser_binary_logical_or() -> None:
     )
 
 def test_parser_binary_logical_and() -> None:
+    assert parse(tokenize('(1 < 2) and (2 < 3)')) == BinaryOp(
+            left=BinaryOp(
+                left=Literal(1),
+                op='<',
+                right=Literal(2)
+            ),
+            op='and',
+            right=BinaryOp(
+                left=Literal(2),
+                op='<',
+                right=Literal(3)
+            ),
+        )
+
+def test_parser_binary_logical_and_in_if() -> None:
     assert parse(tokenize('if a < b and a < c then 1')) == IfExpression(
         cond=BinaryOp(
             left=BinaryOp(
@@ -288,6 +303,18 @@ def test_parser_parse_a_block_with_expression() -> None:
         )
     ])
 
+def test_parser_parse_a_block_with_expression_semicolon_after() -> None:
+    assert parse(tokenize('{ 1 + 2 };')) == Block([
+        Block([
+            BinaryOp(
+                left=Literal(1),
+                op='+',
+                right=Literal(2)
+            )
+        ]),
+        Literal(None)
+    ])
+
 def test_parser_parse_a_block_unit_return() -> None:
     assert parse(tokenize('{ 1 + 2; }')) == Block([
         BinaryOp(
@@ -295,6 +322,19 @@ def test_parser_parse_a_block_unit_return() -> None:
             op='+',
             right=Literal(2)
         ),
+        Literal(None)
+    ])
+
+def test_parser_parse_a_block_with_expression_unit_return_semicolon_after() -> None:
+    assert parse(tokenize('{ 1 + 2; };')) == Block([
+        Block([
+            BinaryOp(
+                left=Literal(1),
+                op='+',
+                right=Literal(2)
+            ),
+            Literal(None)
+        ]),
         Literal(None)
     ])
 
@@ -324,22 +364,47 @@ def test_parser_parse_blocks_and_expression() -> None:
         { a - b }
         """
         )) == Block([
-        Block([
-            BinaryOp(
-                left=Literal(1),
-                op='+',
-                right=Literal(2)
-            )
-        ]),
-        Literal(3),
-        Block([
-            BinaryOp(
-                left=Identifier('a'),
-                op='-',
-                right=Identifier('b')
-            )
+            Block([
+                BinaryOp(
+                    left=Literal(1),
+                    op='+',
+                    right=Literal(2)
+                )
+            ]),
+            Literal(3),
+            Block([
+                BinaryOp(
+                    left=Identifier('a'),
+                    op='-',
+                    right=Identifier('b')
+                )
+            ])
         ])
-    ])
+
+def test_parser_parse_expression_with_blocks() -> None:
+    assert parse(tokenize(
+        """
+        { 1 + 2 }
+        <
+        { a - b }
+        """
+        )) == BinaryOp(
+            left=Block([
+                BinaryOp(
+                    left=Literal(1),
+                    op='+',
+                    right=Literal(2)
+                )
+            ]),
+            op='<',
+            right=Block([
+                BinaryOp(
+                    left=Identifier('a'),
+                    op='-',
+                    right=Identifier('b')
+                )
+            ])
+        )
 
 def test_parser_parse_block_in_a_block() -> None:
     assert parse(tokenize('{ { a + b } }')) == Block([
@@ -441,6 +506,12 @@ def test_parser_parse_unary_operation_then_literal_after_semicolon() -> None:
         Identifier('b')
     ])
 
+def test_parser_parse_unary_operation_on_boolean() -> None:
+    assert parse(tokenize('not true')) == UnaryOp(
+            op='not',
+            right=Literal(True)
+        )
+
 def test_parser_parse_variable_declaration() -> None:
     assert parse(tokenize('var a = b')) == VariableDeclaration(
         name='a',
@@ -508,10 +579,14 @@ def test_parser_block_test_cases() -> None:
     assert_parser_not_fails('{ if true then { a } b; c }')
     assert_parser_not_fails('{ if true then { a } else { b } 3 }')
     assert_parser_not_fails('x = { { f(a) } { b } }')
+    assert_parser_not_fails('if if if true then true then true then true')
+    assert_parser_not_fails('if if if true then true else false then true else false then true else false')
 
 def test_parser_block_test_cases_should_fail() -> None:
     assert_parser_fails('{ a b }')
     assert_parser_fails('{ if true then { a } b c }')
+    assert_parser_fails('if if if true true true then then then true true true')
+    assert_parser_fails('if if if true then then then true')
 
 def test_parser_empty_input() -> None:
     assert_parser_fails('')
