@@ -3,7 +3,7 @@ from compiler.models.tokens import Regexes, Token
 
 def tokenize(source_code: str) -> list[Token]:
     whitespace_re = re.compile(r'\s+')
-    comment_re = re.compile(r'//.*\n')
+    comment_re = re.compile(r'#.*|//.*|\n')
     position = 0
     result: list[Token] = []
     

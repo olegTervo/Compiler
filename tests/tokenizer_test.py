@@ -74,3 +74,10 @@ def test_tokenizer_skips_comment() -> None:
         Token(type="identifier", text="a"),
         Token(type="punctuation", text=";")
     ]
+
+def test_tokenizer_skips_comment_hashtag() -> None:
+    assert tokenize("# this is comment \n int a;") == [
+        Token(type="identifier", text="int"),
+        Token(type="identifier", text="a"),
+        Token(type="punctuation", text=";")
+    ]
