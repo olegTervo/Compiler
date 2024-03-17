@@ -2,7 +2,7 @@ from compiler.models.expressions import *
 from compiler.models.tokens import Token
 from compiler.models.types import *
 
-def parse(tokens: list[Token]) -> Expression:
+def parse(tokens: list[Token]) -> Module:
     pos = 0
 
     def peek() -> Token:
@@ -29,14 +29,17 @@ def parse(tokens: list[Token]) -> Expression:
             return Block(exps)
         
     # TODO: reduce copy-paste
-    def parse_code() -> Expression:
+    def parse_code() -> Module:
+        sequence: list[Expression] = []
         if peek().type == 'end':
             raise Exception('No code to parse')
+        while peek().text == 'fun':
+            sequence.append(parse_function())
         ret = parse_expressions()
         if pos != len(tokens):
             raise Exception(f'Not all tokens were parsed. Was {len(tokens)}, parsed {pos}')
-        
-        return many_to_one(ret)
+        main = [many_to_one(ret)]
+        return Module(main + sequence)
     
     def parse_expressions() -> list[Expression]:
         ret: list[Expression] = []
@@ -50,6 +53,8 @@ def parse(tokens: list[Token]) -> Expression:
                 
             if peek().type != 'end' and peek().text != '}':
                 if not exp.ends_with_block() or peek().text == ';':
+                    if isinstance(exp, FunctionDeclaration):
+                        print(exp.name, exp.ends_with_block())
                     consume(';')
                 ret.append(exp)
             else:
@@ -69,14 +74,10 @@ def parse(tokens: list[Token]) -> Expression:
         return block
 
     def parse_expression() -> Expression:
-        print('ex', peek().text)
         if peek().text == '{':
-            print('ex block', peek().text)
             left = parse_block()
         else:
-            print('ex pol', peek().text)
             left = parse_polynomial()
-        print('ex after', peek().text)
         
         if peek().text == '=':
             consume('=')
@@ -85,7 +86,6 @@ def parse(tokens: list[Token]) -> Expression:
             return BinaryOp(left, op, right)
         
         while peek().text in ['<', '>', '==', '>=', '<=', '!=', '%']:
-            print('ex cought', peek().text)
             op_token = consume() # TODO: parse_token()
             if peek().text == '{':
                 right = parse_block()
@@ -124,6 +124,8 @@ def parse(tokens: list[Token]) -> Expression:
             return parse_while_expression()
         elif peek().text in ['not', '-']:
             return parse_unary_expression()
+        elif peek().text == 'return':
+            return parse_return()
         elif peek().type == 'int_literal':
             return parse_literal()
         elif peek().type == 'identifier':
@@ -177,7 +179,7 @@ def parse(tokens: list[Token]) -> Expression:
         if peek().type == 'identifier':
             name = peek().text
             consume(name)
-            variable_type: Type = BasicType('Unit')
+            variable_type: Type = Unit
             if peek().text == ':':
                 consume(':')
                 t = consume()
@@ -225,5 +227,32 @@ def parse(tokens: list[Token]) -> Expression:
             if peek().text == ',':
                 consume(',')
         return args
+    
+    def parse_function() -> FunctionDeclaration:
+        consume('fun')
+        name = peek().text
+        consume(name)
+        args: list[Expression] = []
+        consume('(')
+        while peek().text != ')':
+            var_name = consume().text
+            consume(':')
+            var_type = consume().text
+            if peek().text != ')':
+                consume(',')
+            args.append(Identifier(name=var_name, type=string_to_type(var_type)))
+        consume(')')
+        return_type = Unit
+        if peek().text == ':':
+            consume(':')
+            return_type = string_to_type(consume().text)
+        body = parse_block()
+        return FunctionDeclaration(name=name, args=args, body=body, type=return_type)
+    
+    def parse_return() -> ReturnExpression:
+        consume('return')
+        exp = parse_expression()
+        consume(';')
+        return ReturnExpression(value=exp)
 
     return parse_code()

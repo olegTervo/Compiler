@@ -1,0 +1,60 @@
+fun do() {
+    print_int(1);
+}
+
+do();
+output 1
+---
+fun do(x: Int) {
+    print_int(x);
+}
+
+do(1);
+output 1
+---
+fun square(x: Int): Int {
+    return x * x;
+}
+
+fun vec_len_squared(x: Int, y: Int): Int {
+    return square(x) + square(y);
+}
+
+fun print_int_twice(x: Int) {
+    print_int(x);
+    print_int(x);
+}
+
+print_int_twice(vec_len_squared(3, 4));
+output 25
+output 25
+---
+fun recursion(x: Int): Int {
+    if x > 1
+    then { 
+        print_int(x);
+        recursion(x-1);
+        x # matching types of then and else
+    }
+    else 
+        return x;
+}
+
+recursion(5);
+output 5
+output 4
+output 3
+output 2
+---
+fun f1(x: Int): Int {
+    if x % 2 == 0
+    then return f2(x); # calls f1 back with x+1, continues to else
+    else return x+1;
+}
+
+fun f2(x: Int): Int {
+    return f1(x+1);
+}
+
+print_int(f1(2));
+output 4

@@ -6,7 +6,25 @@ from compiler.models.symbol_table import *
 # TODO: own exception types
 # TODO: table to track types of variables
 # TODO: add a Type to each AST node
-def typecheck(node: Expression, variables: SymTab = SymTab({})) -> Type:
+def typecheck(exp: Expression, variables: SymTab = SymTab({})) -> Type:
+    if isinstance(exp, Module):
+        node = exp.sequence[0]
+        # first collect all functions for recursive calls
+        for i in range(1, len(exp.sequence)):
+            fun = exp.sequence[i]
+            if isinstance(fun, FunctionDeclaration):
+                variables.variables[fun.name] = fun.type
+        # then check them
+        for i in range(1, len(exp.sequence)):
+            fun = exp.sequence[i]
+            if isinstance(fun, FunctionDeclaration):
+                temp = variables
+                for arg in fun.args:
+                    temp.variables[arg.get_name()] = arg.type
+                check_type(fun, variables)
+    else:
+        node = exp
+
     node.type = check_type(node, variables)
     return node.type
 
@@ -123,12 +141,27 @@ def check_type(node: Expression, variables: SymTab = SymTab({})) -> Type:
                         raise Exception(f'Function {node.name} expects 0 parameters, got {len(node.args)}')
                     return Int
                 case _:
-                    raise Exception(f'Unsupported function {node.name}')
-        
+                    root_sym = variables
+                    while isinstance(root_sym, HierarchicalSymTab):
+                        root_sym = root_sym.parent
+                    if node.name in root_sym.variables:
+                        return root_sym.variables[node.name]
+                    else:
+                        raise Exception(f'Undeclared function {node.name}')
+                        
         case Block():
             for i in range(0, len(node.sequence)-1):
                 typecheck(node.sequence[i], variables)
             return typecheck(node.sequence[len(node.sequence)-1], variables)
+        
+        case FunctionDeclaration():
+            body_type = typecheck(node.body, variables)
+            if body_type != node.type:
+                raise Exception(f'Function {node.name} expects to return type {node.type}, but returned {body_type}')
+            return body_type
+        
+        case ReturnExpression():
+            return typecheck(node.value)
         
         case _:
             raise Exception(f'Unsupported AST node: {node}')

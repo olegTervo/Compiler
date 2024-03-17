@@ -23,8 +23,20 @@ PredefinedSymbols = {
     'unary_negative': lambda x: not x if isinstance(x, bool) else -x,
 }
 
+def create_lambda(fun: FunctionDeclaration) -> Callable:
+    return lambda args: call_function(fun, args)
+
 # TODO: add variables, loops, tables, etc...
-def interpret(node: Expression, variables: SymTab = SymTab(variables=PredefinedSymbols)) -> Value:
+def interpret(exp: Expression, variables: SymTab = SymTab(variables=PredefinedSymbols)) -> Value:
+    if isinstance(exp, Module):
+        node = exp.sequence[0]
+        for i in range(1, len(exp.sequence)):
+            fun = exp.sequence[i]
+            if isinstance(fun, FunctionDeclaration):
+                variables.variables[fun.name] = create_lambda(fun)
+    else:
+        node = exp
+
     match node:
         case Literal():
             if isinstance(node.value, bool):
@@ -103,20 +115,35 @@ def interpret(node: Expression, variables: SymTab = SymTab(variables=PredefinedS
         case Function():
             match node.name:
                 case 'print_int':
-                    if len(node.args) == 1 and isinstance(node.args[0], Literal):
-                        print(node.args[0].value)
-                        return None
+                    if len(node.args) == 1:
+                        if isinstance(node.args[0], Literal) or isinstance(node.args[0], Identifier):
+                            return None
                     raise Exception(f'Unsupported arguments for the print_int function, {node.args}')
                 case 'print_bool':
-                    if len(node.args) == 1 and isinstance(node.args[0], Literal):
-                        print(node.args[0].value)
-                        return None
+                    if len(node.args) == 1:
+                        if isinstance(node.args[0], Literal) or isinstance(node.args[0], Identifier):
+                            return None
                     raise Exception(f'Unsupported arguments for the print_bool function, {node.args}')
                 case 'read_int':
                     val = int(input(""))
                     return val
                 case _:
-                    raise Exception(f'Unsupported function {node.name}')
+                    top_sym = variables
+                    while isinstance(top_sym, HierarchicalSymTab):
+                        top_sym = top_sym.parent
+                    if not node.name in top_sym.variables:
+                        raise Exception(f'Calling undefined function {node.name}')
+                    print(node.name)
+                    print(top_sym.variables)
+                    function: Callable = top_sym.variables[node.name]
+                    fun_variables = []
+                    for arg in node.args:
+                        fun_variables.append(interpret(arg))
+                    return function(fun_variables)
+            
+        case ReturnExpression():
+            return interpret(node.value)
+                    
         case _:
             raise Exception(f'Unsupported AST node: {node}')
         
@@ -137,3 +164,12 @@ def and_operation(a: Expression, b: Expression, variables: SymTab) -> bool:
         if isinstance(ret, bool):
             return ret
     return False
+
+def call_function(fun: FunctionDeclaration, args: list[int | bool | None | Callable[..., Any]]) -> Value:
+    print(fun.name, args)
+    if len(args) != len(fun.args):
+        raise Exception(f"Bad arguments for the function {fun.name}")
+    temp_sym: SymTab = SymTab(PredefinedSymbols)
+    for i in range(0, len(args)):
+        temp_sym.variables[fun.args[i].get_name()] = args[i]
+    return interpret(fun.body, temp_sym)

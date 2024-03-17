@@ -102,12 +102,47 @@ def test_interpreter_handles_read_int(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr('builtins.input', lambda _: "1")
     assert interpret(parse(tokenize('read_int()'))) == 1
 
+def test_interpreter_handles_module_with_function() -> None:
+    assert interpret(parse(tokenize('''
+        fun print(a: Int): Int {
+            print_int(a);
+        }
+        
+        print(2);
+        '''))) == None
+    
+def test_interpreter_handles_module_with_function_with_return() -> None:
+    assert interpret(parse(tokenize('''
+        fun sum(a: Int): Int {
+            a = a + 1;
+            return a;
+        }
+        
+        sum(2)
+        '''))) == 3
+    
+def test_interpreter_handles_module_with_many_functions() -> None:
+    assert interpret(parse(tokenize('''
+        fun square(x: Int): Int {
+            return x * x;
+        }
+        
+        fun vec_len_squared(x: Int, y: Int): Int {
+            return square(x) + square(y);
+        }
+
+        fun print_int_twice(x: Int) {
+            print_int(x);
+            print_int(x);
+        }
+
+        vec_len_squared(3, 4)
+        '''))) == 25
+
 def test_interpreter_fails_bad_parameters_for_predefined_functions() -> None:
     assert_interpreter_fails('print_int()')
-    assert_interpreter_fails('print_int(a)')
     assert_interpreter_fails('print_int(1, 2)')
     assert_interpreter_fails('print_bool()')
-    assert_interpreter_fails('print_bool(b)')
     assert_interpreter_fails('print_bool(true, false)')
 
 def test_interpreter_fails_bad_input(monkeypatch: MonkeyPatch) -> None:

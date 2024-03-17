@@ -1,90 +1,48 @@
-from dataclasses import dataclass, fields
-from typing import Any
 from compiler.models.expressions import *
+from compiler.models.instructions import *
 from compiler.models.symbol_table import *
 from compiler.models.types import *
 
-@dataclass(frozen=True)
-class IRVar:
-    name: str
+RootTypes = {
+    IRVar('+'): Int,
+    IRVar('-'): Int,
+    IRVar('*'): Int,
+    IRVar('/'): Int,
+    IRVar('<'): Bool,
+    IRVar('>'): Bool,
+    IRVar('=='): Bool,
+    IRVar('>='): Bool,
+    IRVar('!='): Bool,
+    IRVar('%'): Int,
+    IRVar('and'): Bool,
+    IRVar('or'): Bool,
 
-    def __repr__(self) -> str:
-        return self.name
+    IRVar('unary_not'): Bool,
+    IRVar('unary_-'): Int
+}
 
-@dataclass(frozen=True)
-class Instruction():
-    "Base class for instructions"
+next_var_number = 1
+def get_next_var_number() -> int:
+    global next_var_number
+    ret = next_var_number
+    next_var_number = next_var_number + 1
+    return ret
 
-    def __str__(self) -> str:
-        """Returns a string representation similar to
-        our IR code examples, e.g. 'LoadIntConst(3, x1)'"""
-        def format_value(v: Any) -> str:
-            if isinstance(v, list):
-                return f'[{", ".join(format_value(e) for e in v)}]'
-            else:
-                return str(v)
-        args = ', '.join(
-            format_value(getattr(self, field.name))
-            for field in fields(self)
-            if field.name != 'location'
-        )
-        return f'{type(self).__name__}({args})'
-
-@dataclass(frozen=True)
-class Call(Instruction):
-    fun: IRVar
-    args: list[IRVar]
-    dest: IRVar
-
-@dataclass(frozen=True)
-class LoadIntConst(Instruction):
-    value: int
-    dest: IRVar
-
-@dataclass(frozen=True)
-class LoadBoolConst(Instruction):
-    value: bool
-    dest: IRVar
-
-@dataclass(frozen=True)
-class Copy(Instruction):
-    source: IRVar
-    dest: IRVar
-
-@dataclass(frozen=True)
-class Label(Instruction):
-    name: str
-
-@dataclass(frozen=True)
-class Jump(Instruction):
-    label: Label
-
-@dataclass(frozen=True)
-class CondJump(Instruction):
-    cond: IRVar
-    then_label: Label
-    else_label: Label
-
-@dataclass(frozen=True)
-class Return(Instruction):
-    "return statement"
-
-def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> list[Instruction]:
-    
+def generate_ir(exp: Expression, root_types: dict[IRVar, Type] = {}) -> dict[str, list[Instruction]]:
+    instructions_dictionary: dict[str, list[Instruction]] = {}   
     var_types: dict[IRVar, Type] = root_types.copy()
 
     # 'var_unit' is used when an expression's type is 'Unit'.
     var_unit = IRVar('unit')
     var_types[var_unit] = Unit
     
-    next_var_number = 1
     next_label_number = 1
+    next_parameter_number = 1
     instructions: list[Instruction] = []
 
     def new_var(t: Type) -> IRVar:
-        nonlocal next_var_number
-        var = IRVar(f'x{next_var_number}')
-        next_var_number += 1
+        next = get_next_var_number()
+        var = IRVar(f'x{next}')
         return var
     
     def new_label() -> Label:
@@ -92,6 +50,16 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
         label = Label(f'L{next_label_number}')
         next_label_number += 1
         return label
+    
+    def new_parameter() -> IRVar:
+        nonlocal next_parameter_number
+        parameter = IRVar(f'p{next_parameter_number}')
+        next_parameter_number += 1
+        return parameter
+    
+    def reset_parameters() -> None:
+        nonlocal next_parameter_number
+        next_parameter_number = 1
     
     def visit(node: Expression, variables: SymTab) -> IRVar:
         match node:
@@ -256,35 +224,39 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
                 return var_result_body
             
             case Function():
-                match node.name:
-                    case 'print_int':
-                        var_result = new_var(BasicType('Unit'))
-                        var_print = visit(node.args[0], variables)
-                        instructions.append(Call(
-                            fun=IRVar(node.name),
-                            args=[var_print],
-                            dest=var_result
-                        ))
-                        return var_result
-                    case 'print_bool':
-                        var_result = new_var(BasicType('Unit'))
-                        var_print = visit(node.args[0], variables)
-                        instructions.append(Call(
-                            fun=IRVar(node.name),
-                            args=[var_print],
-                            dest=var_result
-                        ))
-                        return var_result
-                    case 'read_int':
-                        var_result = new_var(BasicType('Unit'))
-                        instructions.append(Call(
-                            fun=IRVar(node.name),
-                            args=[],
-                            dest=var_result
-                        ))
-                        return var_result
-                    case _:
-                        raise Exception(f'Unsupported function {node.name}')
+                if node.name in ['print_int', 'print_bool', 'read_int']:
+                    if len(node.args) > 1:
+                        raise Exception(f"Invalid arguments for function {node.name}")
+                    var_result = new_var(BasicType('Unit'))
+                    args = []
+                    for arg in node.args:
+                        args.append(visit(arg, variables))
+                    instructions.append(Call(
+                        fun=IRVar(node.name),
+                        args=args,
+                        dest=var_result
+                    ))
+                    return var_result
+                else:
+                    var_result = new_var(node.type)
+                    root_variables = variables
+                    while isinstance(root_variables, HierarchicalSymTab):
+                        root_variables = root_variables.parent
+                    args=[]
+                    for arg in node.args:
+                        args.append(visit(arg, variables))
+                    instructions.append(Call(
+                        fun=IRVar(node.name),
+                        args=args,
+                        dest=var_result
+                    ))
+                    return var_result
+                
+            case ReturnExpression():
+                res = visit(node.value, variables)
+                instructions.append(Return(val=res))
+                return res
+
             case _:
                 raise Exception(f'Unsupported AST node: {node}')
             
@@ -293,22 +265,43 @@ def generate_ir(root_node: Expression, root_types: dict[IRVar, Type] = {}) -> li
     for v in root_types.keys():
         root_symtab.variables[v.name] = v
 
-    instructions.append(Label('start'))
+    if isinstance(exp, Module):
+        root_node = exp.sequence[0]
+        for i in range(1, len(exp.sequence)):
+            next = exp.sequence[i]
+            if isinstance(next, FunctionDeclaration):
+                instructions_dictionary[next.name] = generate_ir(next)["main"]
+        instructions.append(Label('start'))
+    elif isinstance(exp, FunctionDeclaration):
+        if len(exp.args) % 2 == 1: new_parameter() # fix for odd amount of parameters to make stack % 16 = 0
+        for arg in exp.args:
+            ir_var = new_parameter()
+            var = new_var(arg.type)
+            instructions.append(Copy(ir_var, var))
+            root_symtab.variables[arg.get_name()] = var
+        reset_parameters()
+        root_node = exp.body
+    else:
+        root_node = exp
+        instructions.append(Label('start'))
+    
     var_result = visit(root_node, root_symtab)
 
-    if root_node.type == Int:
-        instructions.append(Call(
-            IRVar("print_int"),
-            [var_result],
-            new_var(Unit)
-        ))
-    elif root_node.type == Bool:
-        instructions.append(Call(
-            IRVar("print_bool"),
-            [var_result],
-            new_var(Unit)
-        ))
+    if not isinstance(exp, FunctionDeclaration):
+        if root_node.type == Int:
+            instructions.append(Call(
+                IRVar("print_int"),
+                [var_result],
+                new_var(Unit)
+            ))
+        elif root_node.type == Bool:
+            instructions.append(Call(
+                IRVar("print_bool"),
+                [var_result],
+                new_var(Unit)
+            ))
 
-    instructions.append(Return())
+        instructions.append(Return())
 
-    return instructions
+    instructions_dictionary["main"] = instructions
+    return instructions_dictionary
