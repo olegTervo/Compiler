@@ -53,8 +53,6 @@ def parse(tokens: list[Token]) -> Module:
                 
             if peek().type != 'end' and peek().text != '}':
                 if not exp.ends_with_block() or peek().text == ';':
-                    if isinstance(exp, FunctionDeclaration):
-                        print(exp.name, exp.ends_with_block())
                     consume(';')
                 ret.append(exp)
             else:

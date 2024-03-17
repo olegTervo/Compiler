@@ -28,7 +28,14 @@ def get_next_var_number() -> int:
     next_var_number = next_var_number + 1
     return ret
 
-def generate_ir(exp: Expression, root_types: dict[IRVar, Type] = {}) -> dict[str, list[Instruction]]:
+end_label_number = 1
+def get_next_end_label_number() -> int:
+    global end_label_number
+    ret = end_label_number
+    end_label_number = end_label_number + 1
+    return ret
+
+def generate_ir(exp: Expression,  root_types: dict[IRVar, Type] = {}) -> dict[str, list[Instruction]]:
     instructions_dictionary: dict[str, list[Instruction]] = {}   
     var_types: dict[IRVar, Type] = root_types.copy()
 
@@ -255,6 +262,7 @@ def generate_ir(exp: Expression, root_types: dict[IRVar, Type] = {}) -> dict[str
             case ReturnExpression():
                 res = visit(node.value, variables)
                 instructions.append(Return(val=res))
+                instructions.append(Jump(Label(f"End_{end_label_number}")))
                 return res
 
             case _:
@@ -271,6 +279,8 @@ def generate_ir(exp: Expression, root_types: dict[IRVar, Type] = {}) -> dict[str
             next = exp.sequence[i]
             if isinstance(next, FunctionDeclaration):
                 instructions_dictionary[next.name] = generate_ir(next)["main"]
+                instructions_dictionary[next.name].append(Label(f"End_{end_label_number}"))
+                get_next_end_label_number()
         instructions.append(Label('start'))
     elif isinstance(exp, FunctionDeclaration):
         if len(exp.args) % 2 == 1: new_parameter() # fix for odd amount of parameters to make stack % 16 = 0
